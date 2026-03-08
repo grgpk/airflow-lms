@@ -67,10 +67,11 @@ x-airflow-common: &airflow-common
     # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
     # yamllint enable rule:line-length
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    AIRFLOW_CONN_MONGO_DEFAULT: "mongo://mongodb:27017/?ssl=false"
     AIRFLOW_CONN_FS_DEFAULT: "fs:///?path=%2F"
     # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-pandas}
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-pandas apache-airflow-providers-mongo}
     # The following line can be used to set a custom config file, stored in the local config folder
     AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
   volumes:
@@ -115,6 +116,20 @@ services:
       timeout: 30s
       retries: 50
       start_period: 30s
+    restart: always
+
+  mongodb:
+    image: mongo:7.0
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb-data-volume:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     restart: always
 
   airflow-apiserver:
@@ -343,3 +358,4 @@ services:
 
 volumes:
   postgres-db-volume:
+  mongodb-data-volume:
